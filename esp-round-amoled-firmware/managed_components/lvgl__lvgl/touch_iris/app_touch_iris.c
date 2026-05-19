@@ -33,36 +33,9 @@ typedef struct  {
  **********************/
 
 static const touch_iris_entry_info_t touch_iris_entry_info[] = {
-#if LV_BUILD_TOUCH_IRIS
-    {"touch_iris", .entry_cb = lv_touch_iris},
-#endif
 
 #if LV_BUILD_TOUCH_IRIS
     { "widgets", .entry_cb = lv_touch_iris_widgets },
-#endif
-
-#if LV_USE_DEMO_MUSIC
-    { "music", .entry_cb = lv_demo_music },
-#endif
-
-#if LV_USE_DEMO_STRESS
-    { "stress", .entry_cb = lv_demo_stress },
-#endif
-
-#if LV_USE_DEMO_KEYPAD_AND_ENCODER
-    { "keypad_encoder", .entry_cb = lv_demo_keypad_encoder },
-#endif
-
-#if LV_USE_DEMO_VECTOR_GRAPHIC && LV_USE_VECTOR_GRAPHIC
-    { "vector_graphic_buffered", .entry_cb = lv_demo_vector_graphic_buffered },
-#endif
-
-#if LV_USE_DEMO_VECTOR_GRAPHIC && LV_USE_VECTOR_GRAPHIC
-    { "vector_graphic_not_buffered", .entry_cb = lv_demo_vector_graphic_not_buffered },
-#endif
-
-#if LV_USE_DEMO_BENCHMARK
-    { "benchmark", .entry_cb = lv_demo_benchmark },
 #endif
 
     { "", .entry_cb = NULL }
