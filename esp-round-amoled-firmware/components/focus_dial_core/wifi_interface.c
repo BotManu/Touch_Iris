@@ -5,7 +5,10 @@
 #include <string.h>
 
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
+
+#include "esp_sntp.h"
 
 #define TAG "wifi_interface"
 
@@ -26,6 +29,7 @@ static esp_event_handler_instance_t ip_event_handler;
 static esp_event_handler_instance_t wifi_event_handler;
 
 static EventGroupHandle_t s_wifi_event_group = NULL;
+static SemaphoreHandle_t sntp_sync_mutex = NULL;
 
 TaskHandle_t wifi_interface_th = NULL;
 
@@ -35,6 +39,12 @@ esp_err_t wifi_interface_init_default(void);
 esp_err_t wifi_interface_deinit(void);
 esp_err_t wifi_interface_connect(const char *ssid, const char *password);
 esp_err_t wifi_interface_disconnect(void);
+
+static void initialize_sntp(void);
+static void obtain_time(void);
+
+
+
 
 
 void wifi_interface_proc(void *pvParameters){
@@ -64,6 +74,21 @@ void wifi_interface_proc(void *pvParameters){
     }
 
     while(1){
+        if (sntp_sync_mutex != NULL) {
+            if (xSemaphoreTake(sntp_sync_mutex, portMAX_DELAY) == pdTRUE) {
+
+                time_t now;
+                time(&now);
+                struct tm timeinfo;
+                localtime_r(&now, &timeinfo);
+
+                ESP_LOGI(TAG, "Local time: %s\n", asctime(&timeinfo));
+
+
+                xSemaphoreGive(sntp_sync_mutex);
+            }
+        }
+
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
@@ -82,11 +107,40 @@ void wifi_interface_proc(void *pvParameters){
 
 }
 
+static void initialize_sntp(void)
+{
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "ro.pool.ntp.org");   // or "ro.pool.ntp.org"
+    sntp_init();
+}
+
 
 //Master function for wifi process control
 void wifi_interface_proc_init(void){
     xTaskCreate(wifi_interface_proc, "wifi_interface_proc", 4096, NULL, 5, &wifi_interface_th);
 }
+
+static void obtain_time(void)
+{
+    int retry = 0;
+    const int retry_count = 10;
+    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && retry < retry_count) {
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        retry++;
+    }
+    if(retry == retry_count) {
+        ESP_LOGE(TAG, "Failed to synchronize time with SNTP server");
+        return;
+    } else {
+        ESP_LOGI(TAG, "Time synchronized with SNTP server");
+        setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
+        tzset();
+        if (sntp_sync_mutex != NULL) {
+            xSemaphoreGive(sntp_sync_mutex);
+        }
+    }
+}
+
 
 static void ip_event_cb(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
@@ -98,6 +152,8 @@ static void ip_event_cb(void *arg, esp_event_base_t event_base, int32_t event_id
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event_ip->ip_info.ip));
         wifi_retry_count = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+        initialize_sntp();
+        obtain_time();
         break;
     case (IP_EVENT_STA_LOST_IP):
         ESP_LOGI(TAG, "Lost IP");
@@ -167,6 +223,13 @@ esp_err_t wifi_interface_init(void)
     }
 
     s_wifi_event_group = xEventGroupCreate();
+    sntp_sync_mutex = xSemaphoreCreateBinary();
+    if (sntp_sync_mutex == NULL) {
+        ESP_LOGE(TAG, "Failed to create SNTP sync mutex");
+        return ESP_ERR_NO_MEM;
+    }else {
+        xSemaphoreTake(sntp_sync_mutex, 0); // Take the mutex so that it is initially unavailable until time is synchronized
+    }
 
     ret = esp_netif_init();
     if (ret != ESP_OK) {
@@ -265,6 +328,11 @@ esp_err_t wifi_interface_deinit(void)
     ESP_ERROR_CHECK(esp_wifi_deinit());
     ESP_ERROR_CHECK(esp_wifi_clear_default_wifi_driver_and_handlers(wifi_netif));
     esp_netif_destroy(wifi_netif);
+
+    if (sntp_sync_mutex != NULL) {
+        vSemaphoreDelete(sntp_sync_mutex);
+        sntp_sync_mutex = NULL;
+    }
 
     ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, ESP_EVENT_ANY_ID, ip_event_handler));
     ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_event_handler));
