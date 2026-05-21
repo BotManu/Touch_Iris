@@ -11,11 +11,9 @@
 
 #include "freertos/FreeRTOS.h"
 
-esp_err_t wifi_interface_init(void);
-esp_err_t wifi_interface_init_default(void);
-esp_err_t wifi_interface_deinit(void);
-esp_err_t wifi_interface_connect(const char *ssid, const char *password);
-esp_err_t wifi_interface_disconnect(void);
+//Master function for wifi process control
+void wifi_interface_proc_init(void);
+
 bool wifi_interface_is_connected(void);
 
 

@@ -5,8 +5,13 @@
 #include <string.h>
 
 #include "freertos/event_groups.h"
+#include "freertos/task.h"
 
 #define TAG "wifi_interface"
+
+// Enter the Wi-Fi credentials here
+#define WIFI_SSID "KDance_House"
+#define WIFI_PASSWORD "kmusic35"
 
 #define WIFI_AUTHMODE WIFI_AUTH_WPA2_PSK
 
@@ -21,6 +26,67 @@ static esp_event_handler_instance_t ip_event_handler;
 static esp_event_handler_instance_t wifi_event_handler;
 
 static EventGroupHandle_t s_wifi_event_group = NULL;
+
+TaskHandle_t wifi_interface_th = NULL;
+
+//Local function declaration
+esp_err_t wifi_interface_init(void);
+esp_err_t wifi_interface_init_default(void);
+esp_err_t wifi_interface_deinit(void);
+esp_err_t wifi_interface_connect(const char *ssid, const char *password);
+esp_err_t wifi_interface_disconnect(void);
+
+
+void wifi_interface_proc(void *pvParameters){
+     ESP_LOGI(TAG, "Starting wifi connect...");
+
+    ESP_LOGI(TAG, "Starting wifi connect...");
+    ESP_ERROR_CHECK(wifi_interface_init());
+
+    esp_err_t ret = wifi_interface_connect(WIFI_SSID, WIFI_PASSWORD);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to connect to Wi-Fi network");
+    }
+
+    wifi_ap_record_t ap_info;
+    ret = esp_wifi_sta_get_ap_info(&ap_info);
+    if (ret == ESP_ERR_WIFI_CONN) {
+        ESP_LOGE(TAG, "Wi-Fi station interface not initialized");
+    }
+    else if (ret == ESP_ERR_WIFI_NOT_CONNECT) {
+        ESP_LOGE(TAG, "Wi-Fi station is not connected");
+    } else {
+        ESP_LOGI(TAG, "--- Access Point Information ---");
+        ESP_LOG_BUFFER_HEX("MAC Address", ap_info.bssid, sizeof(ap_info.bssid));
+        ESP_LOG_BUFFER_CHAR("SSID", ap_info.ssid, sizeof(ap_info.ssid));
+        ESP_LOGI(TAG, "Primary Channel: %d", ap_info.primary);
+        ESP_LOGI(TAG, "RSSI: %d", ap_info.rssi);
+    }
+
+    while(1){
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+
+
+
+    // Later, disconnect will be added
+
+    // ESP_LOGI(TAG, "Disconnecting in 5 seconds...");
+    // vTaskDelay(pdMS_TO_TICKS(5000));
+
+    // ESP_ERROR_CHECK(wifi_interface_disconnect());
+
+    // ESP_ERROR_CHECK(wifi_interface_deinit());
+
+    // ESP_LOGI(TAG, "End of tutorial...");
+
+}
+
+
+//Master function for wifi process control
+void wifi_interface_proc_init(void){
+    xTaskCreate(wifi_interface_proc, "wifi_interface_proc", 4096, NULL, 5, &wifi_interface_th);
+}
 
 static void ip_event_cb(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
