@@ -3,7 +3,8 @@ file(GLOB_RECURSE LV_TOUCH_IRIS_SOURCES ${LV_TOUCH_IRIS_DIR}/application/*.c)
 
 idf_component_register(
     SRCS main.c ${LV_TOUCH_IRIS_SOURCES}
-    INCLUDE_DIRS . ${LV_TOUCH_IRIS_DIR}/application ${LV_TOUCH_IRIS_DIR})
+    INCLUDE_DIRS . ${LV_TOUCH_IRIS_DIR}/application ${LV_TOUCH_IRIS_DIR}
+    REQUIRES focus_dial_core)
 
 add_compile_definitions(LV_BUILD_TOUCH_IRIS)
 

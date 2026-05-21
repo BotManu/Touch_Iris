@@ -10,6 +10,7 @@
 #include "bsp/esp-bsp.h"
 #include "bsp/display.h"
 #include "touch_iris.h"
+#include "focus_dial_main.h"
 
 void app_main(void)
 {
@@ -17,6 +18,8 @@ void app_main(void)
     bsp_display_start();
 
     bsp_display_lock(-1);
+
+    focus_dial_main();
 
     // lv_demo_music();
     // lv_demo_benchmark();
