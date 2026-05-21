@@ -45,6 +45,8 @@ lv_obj_t * tv;
  *      MACROS
  **********************/
 
+lv_subject_t * value_p;
+
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
@@ -57,13 +59,19 @@ void lv_touch_iris_widgets(void)
     lv_obj_set_style_bg_color(scr, lv_color_hex(0xc3e6cd), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, LV_PART_MAIN);
 
-    static lv_subject_t value;
-    lv_subject_init_int(&value, 30);
+    static lv_subject_t value_local;
+
+    value_p = &value_local;
+
+    lv_subject_init_int(&value_local, 0);
+    lv_subject_set_min_value_int(&value_local, 0);
+    lv_subject_set_max_value_int(&value_local, 59);
 
     lv_obj_t * arc = lv_arc_create(lv_screen_active());
     lv_obj_set_size(arc, 280, 280);
     lv_obj_center(arc);
-    lv_arc_bind_value(arc, &value);
+    lv_arc_set_range(arc, 0, 59);
+    lv_arc_bind_value(arc, &value_local);
 
     lv_obj_set_style_arc_opa(arc, LV_OPA_50, LV_PART_MAIN);
     lv_obj_set_style_arc_color(arc, lv_color_hex(0x59cfbf), LV_PART_INDICATOR);
@@ -74,7 +82,7 @@ void lv_touch_iris_widgets(void)
 
     lv_obj_t * label = lv_label_create(arc);
     lv_obj_center(label);
-    lv_label_bind_text(label, &value, "%d °C");
+    lv_label_bind_text(label, &value_local, "%d s");
     lv_obj_set_style_text_font(label, &lv_font_montserrat_22, 0); 
 
     printf("Children of active screen: %d\n", lv_obj_get_child_cnt(lv_scr_act()));

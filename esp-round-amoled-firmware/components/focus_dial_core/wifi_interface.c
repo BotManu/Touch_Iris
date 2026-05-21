@@ -10,6 +10,8 @@
 
 #include "esp_sntp.h"
 
+#include <touch_iris.h>
+
 #define TAG "wifi_interface"
 
 // Enter the Wi-Fi credentials here
@@ -45,7 +47,9 @@ static void obtain_time(void);
 
 
 
-
+void async_cb(void *p){
+    lv_subject_set_int(value_p, *((int*)p));
+}
 
 void wifi_interface_proc(void *pvParameters){
      ESP_LOGI(TAG, "Starting wifi connect...");
@@ -84,12 +88,19 @@ void wifi_interface_proc(void *pvParameters){
 
                 ESP_LOGI(TAG, "Local time: %s\n", asctime(&timeinfo));
 
+                int seconds = timeinfo.tm_sec;
+
+                lv_async_call(
+                    async_cb,
+                    (void*)&seconds
+                );
+
 
                 xSemaphoreGive(sntp_sync_mutex);
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(200));
     }
 
 

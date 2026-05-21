@@ -5,6 +5,11 @@
 #include "../../src/draw/lv_draw.h"
 #include "../../src/draw/lv_draw_triangle.h"
 
+
+/* Public Data */
+
+extern lv_subject_t * value_p;
+
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
