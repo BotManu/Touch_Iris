@@ -47,8 +47,16 @@ static void obtain_time(void);
 
 
 
-void async_cb(void *p){
-    lv_subject_set_int(value_p, *((int*)p));
+void async_h_cb(void *p){
+    lv_subject_set_int(value_hours_p, *((int*)p));
+}
+
+void async_m_cb(void *p){
+    lv_subject_set_int(value_minutes_p, *((int*)p));
+}
+
+void async_s_cb(void *p){
+    lv_subject_set_int(value_seconds_p, *((int*)p));
 }
 
 void wifi_interface_proc(void *pvParameters){
@@ -89,12 +97,23 @@ void wifi_interface_proc(void *pvParameters){
                 ESP_LOGI(TAG, "Local time: %s\n", asctime(&timeinfo));
 
                 int seconds = timeinfo.tm_sec;
+                int minutes = timeinfo.tm_min;
+                int hours = timeinfo.tm_hour;
 
                 lv_async_call(
-                    async_cb,
-                    (void*)&seconds
+                    async_h_cb,
+                    (void*)&hours
                 );
 
+                lv_async_call(
+                    async_m_cb,
+                    (void*)&minutes
+                );
+
+                lv_async_call(
+                    async_s_cb,
+                    (void*)&seconds
+                );
 
                 xSemaphoreGive(sntp_sync_mutex);
             }

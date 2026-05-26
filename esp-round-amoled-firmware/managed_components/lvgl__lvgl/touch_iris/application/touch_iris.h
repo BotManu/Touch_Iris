@@ -8,7 +8,9 @@
 
 /* Public Data */
 
-extern lv_subject_t * value_p;
+extern lv_subject_t * value_hours_p;
+extern lv_subject_t * value_minutes_p;
+extern lv_subject_t * value_seconds_p;
 
 /**********************
  * GLOBAL PROTOTYPES
